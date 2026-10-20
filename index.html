@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emergency Fund Months of Expenses Budget Planner</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 to-teal-100 min-h-screen p-4">
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-2xl font-bold text-teal-800 mb-1">Emergency Fund Planner</h1>
+  <p class="text-sm text-teal-600 mb-5">Calculate how many months of expenses your savings cover.</p>
+
+  <!-- Expense Items -->
+  <div class="bg-white rounded-xl shadow p-5 mb-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold text-gray-700">Monthly Expenses</h2>
+      <button id="add-expense" class="text-sm bg-emerald-100 text-emerald-700 rounded px-3 py-1 hover:bg-emerald-200">+ Add Item</button>
+    </div>
+    <div id="expense-list" class="space-y-2"></div>
+    <div class="mt-3 pt-3 border-t border-gray-200 flex justify-between text-sm font-semibold">
+      <span>Total Monthly Expenses</span>
+      <span id="total-expenses" class="text-teal-700">$0</span>
+    </div>
+  </div>
+
+  <!-- Savings & Target -->
+  <div class="bg-white rounded-xl shadow p-5 mb-4">
+    <h2 class="font-semibold text-gray-700 mb-3">Savings & Target</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label for="current-savings" class="block text-sm font-medium text-gray-600 mb-1">Current Savings ($)</label>
+        <input id="current-savings" type="number" min="0" value="0" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
+      </div>
+      <div>
+        <label for="monthly-savings" class="block text-sm font-medium text-gray-600 mb-1">Monthly Savings Contribution ($)</label>
+        <input id="monthly-savings" type="number" min="0" value="500" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
+      </div>
+    </div>
+    <div class="mt-4">
+      <label class="block text-sm font-medium text-gray-600 mb-2">Target Coverage</label>
+      <div class="flex gap-3" role="group" aria-label="Target months">
+        <button data-months="3" class="target-btn flex-1 rounded-lg border-2 border-teal-300 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-400">3 Months</button>
+        <button data-months="6" class="target-btn flex-1 rounded-lg border-2 border-teal-500 py-2 text-sm font-semibold text-white bg-teal-500 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-400">6 Months</button>
+        <button data-months="12" class="target-btn flex-1 rounded-lg border-2 border-teal-300 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-400">12 Months</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="bg-white rounded-xl shadow p-5">
+    <h2 class="font-semibold text-gray-700 mb-4">Results</h2>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="bg-teal-50 rounded-lg p-3 text-center">
+        <div id="current-months" class="text-3xl font-bold text-teal-700">0.0</div>
+        <div class="text-xs text-gray-500 mt-1">Current Months Coverage</div>
+      </div>
+      <div class="bg-emerald-50 rounded-lg p-3 text-center">
+        <div id="target-amount" class="text-3xl font-bold text-emerald-700">$0</div>
+        <div class="text-xs text-gray-500 mt-1">Target Amount</div>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="mb-4">
+      <div class="flex justify-between text-xs text-gray-500 mb-1">
+        <span>Progress to target</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+        <div id="progress-bar" class="h-4 rounded-full transition-all duration-500 bg-teal-500" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div id="shortfall-section" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-4">
+      <div class="text-sm font-semibold text-amber-800 mb-2">You need more savings</div>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div><span class="text-gray-500">Shortfall:</span> <span id="shortfall-amount" class="font-semibold text-red-600"></span></div>
+        <div><span class="text-gray-500">At current rate, reach target in:</span> <span id="months-to-go" class="font-semibold text-teal-700"></span></div>
+      </div>
+      <div id="target-date-line" class="text-xs text-gray-500 mt-2"></div>
+    </div>
+
+    <div id="met-section" class="hidden bg-green-50 border border-green-200 rounded-lg p-4">
+      <div class="text-green-800 font-semibold">You have reached your emergency fund target!</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let targetMonths = 6;
+const defaultExpenses = [
+  { name: 'Rent / Mortgage', amount: 1500 },
+  { name: 'Food & Groceries', amount: 400 },
+  { name: 'Utilities', amount: 150 },
+];
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmt(n) { return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+
+function addExpenseRow(name='', amount=0) {
+  const list = document.getElementById('expense-list');
+  const row = document.createElement('div');
+  row.className = 'expense-row flex gap-2 items-center';
+  row.innerHTML = `
+    <input type="text" aria-label="Expense name" placeholder="Item name" value="${escapeHtml(name)}" class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 expense-name">
+    <input type="number" aria-label="Expense amount" min="0" value="${escapeHtml(amount)}" class="w-24 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 expense-amount">
+    <button class="remove-exp text-red-400 hover:text-red-600 text-lg leading-none" aria-label="Remove expense">×</button>`;
+  row.querySelector('.remove-exp').addEventListener('click', () => { row.remove(); recalc(); });
+  row.querySelectorAll('input').forEach(i => i.addEventListener('input', recalc));
+  list.appendChild(row);
+}
+
+function getTotalExpenses() {
+  return [...document.querySelectorAll('.expense-amount')].reduce((s, i) => s + (parseFloat(i.value) || 0), 0);
+}
+
+function recalc() {
+  const total = getTotalExpenses();
+  const savings = parseFloat(document.getElementById('current-savings').value) || 0;
+  const monthly = parseFloat(document.getElementById('monthly-savings').value) || 0;
+  const targetAmt = total * targetMonths;
+
+  document.getElementById('total-expenses').textContent = fmt(total);
+  document.getElementById('target-amount').textContent = fmt(targetAmt);
+
+  const currentMonths = total > 0 ? savings / total : 0;
+  document.getElementById('current-months').textContent = currentMonths.toFixed(1);
+
+  const pct = targetAmt > 0 ? Math.min(100, (savings / targetAmt) * 100) : 0;
+  document.getElementById('progress-pct').textContent = pct.toFixed(0) + '%';
+  const bar = document.getElementById('progress-bar');
+  bar.style.width = pct + '%';
+  bar.className = 'h-4 rounded-full transition-all duration-500 ' + (pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-teal-500' : 'bg-amber-400');
+
+  const shortfall = targetAmt - savings;
+  if (shortfall <= 0) {
+    document.getElementById('shortfall-section').classList.add('hidden');
+    document.getElementById('met-section').classList.remove('hidden');
+  } else {
+    document.getElementById('met-section').classList.add('hidden');
+    document.getElementById('shortfall-section').classList.remove('hidden');
+    document.getElementById('shortfall-amount').textContent = fmt(shortfall);
+    if (monthly > 0) {
+      const monthsNeeded = Math.ceil(shortfall / monthly);
+      document.getElementById('months-to-go').textContent = monthsNeeded + ' months';
+      const d = new Date();
+      d.setMonth(d.getMonth() + monthsNeeded);
+      document.getElementById('target-date-line').textContent = 'Projected target date: ' + d.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+    } else {
+      document.getElementById('months-to-go').textContent = '—';
+      document.getElementById('target-date-line').textContent = 'Enter monthly contribution to see projected date';
+    }
+  }
+}
+
+document.getElementById('add-expense').addEventListener('click', () => { addExpenseRow(); recalc(); });
+document.getElementById('current-savings').addEventListener('input', recalc);
+document.getElementById('monthly-savings').addEventListener('input', recalc);
+
+document.querySelectorAll('.target-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    targetMonths = parseInt(btn.dataset.months);
+    document.querySelectorAll('.target-btn').forEach(b => {
+      b.className = 'target-btn flex-1 rounded-lg border-2 border-teal-300 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-400';
+    });
+    btn.className = 'target-btn flex-1 rounded-lg border-2 border-teal-500 py-2 text-sm font-semibold text-white bg-teal-500 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-400';
+    recalc();
+  });
+});
+
+defaultExpenses.forEach(e => addExpenseRow(e.name, e.amount));
+recalc();
+</script>
+</body>
+</html>
